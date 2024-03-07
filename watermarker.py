@@ -1,9 +1,8 @@
 from PIL import Image, ImageDraw, ImageFont
 import os
 import re
+from datetime import datetime
 from datetime import date
-import datetime
-
 
 # this script will take number of folders containing images, and will watermark the photo with its filename. 
 #  ie   -> working dir 
@@ -23,30 +22,94 @@ import datetime
 font_location = "C:/Windows/Fonts/arial.ttf"
 ## CHANGE THIS TO CHANGE THE FONT COLOUR - DEFAULT IS BLACK 
 user_font_colour = 'red'
-### TO MANUALLY CHANGE THE DATE, comment out line 27, and uncomment out line 28. Change the date using the format YYYY, M, D
-date_overide = False
-# date_overide = datetime.datetime(2023, 8, 25) #YYYY, M, D 
 
-def add_watermark_to_folder(input_folder, output_folder_root="watermarked", output_folder_suffix="(watermarked)"):
+####### FUNCTIONS #####################
+
+def date_selector_menu (): 
+    '''function to allow the user to input a date, or determine it automatically'''
+    
+    print('This script shall automatically watermark photos with the file name and selected date.\n\n')
+    while True:
+        user_date_choice = input('Date Selection:\n================================================\n1 - Automatic (Today\'s Date)\n2 - Manual Date Selection (User Selection)\n\nSELECTION: ')
+
+        #make a decision about the user input
+        if user_date_choice == '1': #Automatic Date 
+            print('Today\'s Date Chosen')
+            auto_date = True
+            return auto_date 
+        
+        elif user_date_choice == '2': #Manual date choice
+            print('User Date Chosen.\n')
+            auto_date = False
+            return auto_date 
+        
+        else: #incorrect input
+            print("\n\nERROR - PLEASE SELECT A CORRECT INPUT\n")
+
+def date_determinator (auto_date = True): 
+    """function to get date input, either automatically or manually"""
+    #automatic Selection: 
+    if auto_date: 
+        ## choose todays date
+        validated_date = date.today() #determine todays date
+        return validated_date
+    
+    else: #manual selection 
+        #user inputs date, and it is validated by the function below
+        date_string = user_date_input_manual_validator() 
+        #convert the string to type datestring
+        validated_date = datetime.strptime(date_string, "%Y, %m, %d")
+        return validated_date
+
+def user_date_input_manual_validator(): 
+    ''' receives and validates the users manual date input'''
+    #literally stolen from ChatGPT here
+    while True:
+        #get user inut
+        date_str = input('\nPlease choose a date in DD MM YYYY format (e.g., 02 10 2024): ')
+        date_parts = date_str.split()
+
+        #check that the date contains 3 components 
+        if len(date_parts) != 3:
+            print("\nPlease enter the date in the correct format.")
+            continue
+        
+        #split those into individual components to validate indivudually 
+        try:
+            day = int(date_parts[0])
+            month = int(date_parts[1])
+            year = int(date_parts[2])
+
+        #validate those components 
+            if not (1000 <= year <= 9999) or not (1 <= month <= 12) or not (1 <= day <= 31):
+                raise ValueError
+
+            # Additional validation such as checking for valid days in each month
+            # could be done here.
+
+            break
+        except ValueError:
+            print("\nInvalid date. Please enter the date in the correct format.")
+
+    # print("Date entered:", year, month, day) #for testing
+
+    #combine the date into a single string to return
+    date_combined = f"{year}, {month}, {day}"
+    return date_combined
+
+def add_watermark_to_folder(input_folder, output_folder_root="watermarked", output_folder_suffix="(watermarked)", date = date.today()):
+    '''This function will add the watermark to the image'''
+    
     # Create the output root folder
+    print('\nENCODING: This may take some time. Please be patient.')
     output_root = os.path.join(input_folder, output_folder_root)
     os.makedirs(output_root, exist_ok=True)
 
     # Get a list of all folders in the working directory
     folders = [folder for folder in os.listdir(input_folder) if os.path.isdir(os.path.join(input_folder, folder))]
 
-    #check for manual date selection 
-    if not date_overide: #ie, date has been automatically selected
-        #get todays date to watermark show the rough date of images were processed
-        today = date.today() #get the date
-        print('Date automatically determined!')
-        
-    else: #ie, the date has been automatically determined using datetime to be todays date
-        today = date_overide
-        print('Date manually determined!')
-
-    
-    date_processed = today.strftime("%d/%m/%Y") #format the date into DD/MM/YY
+    #format the date into DD/MM/YY
+    date_processed = date.strftime("%d/%m/%Y") 
 
 
     for folder in folders:
@@ -56,8 +119,6 @@ def add_watermark_to_folder(input_folder, output_folder_root="watermarked", outp
         else:
             output_folder = os.path.join(output_root, f"{folder} {output_folder_suffix}")
             os.makedirs(output_folder, exist_ok=True)
-
-
 
 
         # Get a list of all files (photos) in the input folder
@@ -88,15 +149,29 @@ def add_watermark_to_folder(input_folder, output_folder_root="watermarked", outp
                 font_color = user_font_colour 
 
 
-                # Add the watermark to the image with black color
+                # Add the watermark to the image with chosen color
                 draw.text(position, file_name_with_date, font=font, fill=font_color)
 
                 # Save the image to the output folder
                 output_path = os.path.join(output_folder, file)
                 img.save(output_path)
 
-if __name__ == "__main__":
-    working_directory = os.getcwd()
-    add_watermark_to_folder(working_directory)
+def main(): 
+    ''' script runs here'''
+    ## STEP 1 ## - User auto or manual date selection 
+    menu = date_selector_menu()
 
-print("\n\ncode completed\n\n")
+    ## STEP 2 ## - Date is determined and validated if required
+    chosen_date = date_determinator(menu)
+
+    ## STEP 3 ## - Watermark the photos
+    working_directory = os.getcwd()
+    add_watermark_to_folder(working_directory, date = chosen_date)
+
+
+
+if __name__ == "__main__":
+    main() #run the code
+       
+#let the user know the code has finished. 
+finished = input('\n\nCode is completed.\nPress ENTER to close this window.') 
