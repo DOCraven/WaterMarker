@@ -1,11 +1,27 @@
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ExifTags
 import os
-import re
+import sys
+import logging 
 from datetime import datetime
 from datetime import date
 
-# this script will take number of folders containing images, and will watermark the photo with its filename. 
-#  ie   -> working dir 
+## VERSION ##
+## 2.5.0 ##
+
+## THIS USES A Virtual Environment (venv) called 'WaterScript'. 
+    # to run this code in the venv, use the following steps 
+    # 1. open terminal/cmd
+    # 2. change directory ('cd .....) to this directory (ie, cd C:\Scratch\Watermarking Photos)
+    #       a. much easier to just use the absolute path ()
+
+## ADDING LIBRARIES via PIP ##
+# to bypass pip not being in path, use the following code: 
+#   C:\Users\[YOUR USERNAME]\AppData\Local\Programs\Python\Python312\python.exe -m pip install pillow
+#   C:\Users\DCRAVEN\AppData\Local\Programs\Python\Python312\python.exe -m pip [pip command]
+
+
+# this script will take number of folders containing images, and will watermark the photo with its filename and selected date. The photos need to be stored in the "input" folder of the root directory. 
+#  ie   -> input
 #                 -> folder 1
 #                         -> photo1.png
 #                         -> photo2.jpg
@@ -20,7 +36,7 @@ from datetime import date
 
 #variables
 font_location = "C:/Windows/Fonts/arial.ttf"
-## CHANGE THIS TO CHANGE THE FONT COLOUR - DEFAULT IS BLACK 
+## CHANGE THIS TO CHANGE THE FONT COLOUR - DEFAULT IS RED 
 user_font_colour = 'red'
 
 ####### FUNCTIONS #####################
@@ -28,7 +44,7 @@ user_font_colour = 'red'
 def date_selector_menu (): 
     '''function to allow the user to input a date, or determine it automatically'''
     
-    print('This script shall automatically watermark photos with the file name and selected date.\n\n')
+    print('\nThis script shall automatically watermark photos with the file name and selected date.\n\n')
     while True:
         user_date_choice = input('Date Selection:\n================================================\n1 - Automatic (Today\'s Date)\n2 - Manual Date Selection (User Selection)\n\nSELECTION: ')
 
@@ -97,12 +113,16 @@ def user_date_input_manual_validator():
     date_combined = f"{year}, {month}, {day}"
     return date_combined
 
-def add_watermark_to_folder(input_folder, output_folder_root="watermarked", output_folder_suffix="(watermarked)", date = date.today()):
+def add_watermark_to_folder(input_folder, output_dir,  output_folder_root="output", output_folder_suffix="(watermarked)", date = date.today()):
     '''This function will add the watermark to the image'''
-    
+    #folder structure 
+        # output = folder that holds the edited photos
+        # (watermarked) = edited folders are appended with this, to determine status of watermarking 
+
+
     # Create the output root folder
-    print('\nENCODING: This may take some time. Please be patient.')
-    output_root = os.path.join(input_folder, output_folder_root)
+    print('\n\nENCODING: This may take some time. Please be patient.')
+    output_root = os.path.join(output_dir, output_folder_root)
     os.makedirs(output_root, exist_ok=True)
 
     # Get a list of all folders in the working directory
@@ -114,10 +134,12 @@ def add_watermark_to_folder(input_folder, output_folder_root="watermarked", outp
 
     for folder in folders:
         # Create output folder with "(Edited)" suffix
-        if folder == 'watermarked': #so it ignores the output folder, otherwise it will copy the output folder to the output folder
+        if folder == 'output': #so it ignores the output folder, otherwise it will copy the output folder to the output folder
             pass #do nothing
+        elif folder == 'watermarking': #ignores the venv folder
+            pass
         else:
-            output_folder = os.path.join(output_root, f"{folder} {output_folder_suffix}")
+            output_folder = os.path.join(output_root, f"{folder} {output_folder_suffix}") #look for output directory to put images in. 
             os.makedirs(output_folder, exist_ok=True)
 
 
@@ -130,6 +152,9 @@ def add_watermark_to_folder(input_folder, output_folder_root="watermarked", outp
                 # Open the image
                 image_path = os.path.join(input_folder, folder, file)
                 img = Image.open(image_path)
+
+                 # Save EXIF data if available
+                exif_data = img.info.get('exif')
 
                 # Get the base name of the file (without extension)
                 file_name = os.path.splitext(file)[0]
@@ -152,9 +177,12 @@ def add_watermark_to_folder(input_folder, output_folder_root="watermarked", outp
                 # Add the watermark to the image with chosen color
                 draw.text(position, file_name_with_date, font=font, fill=font_color)
 
-                # Save the image to the output folder
+                # Save the image with EXIF data
                 output_path = os.path.join(output_folder, file)
-                img.save(output_path)
+                if exif_data:
+                    img.save(output_path, exif=exif_data)  # Save with EXIF data
+                else:
+                    img.save(output_path)  # Save without EXIF if not available
 
 def main(): 
     ''' script runs here'''
@@ -165,13 +193,34 @@ def main():
     chosen_date = date_determinator(menu)
 
     ## STEP 3 ## - Watermark the photos
-    working_directory = os.getcwd()
-    add_watermark_to_folder(working_directory, date = chosen_date)
+        #get the current working dir, to put photos in when done
+    output_dir = os.getcwd()
+        #get the current directory, and then look for the "input" folder. 
+
+    # add the folder called "input" to the working directory. Photos to be processed live here    
+    working_directory = os.path.join(os.getcwd(), 'input') #get working dir, add #input# to it. 
+    ## TODO change output dir to ove level above. 
+    # send everything to the function
+    add_watermark_to_folder(working_directory, output_dir, date = chosen_date)
 
 
 
 if __name__ == "__main__":
-    main() #run the code
+    # Change the working directory to the script's directory
+    print('WaterMarker - The Water Marking Script\n\nCreated by David Craven\nhttps://github.com/DOCraven/WaterMarker\n\nVersion 2.5.0\n')
+    
+    script_directory = os.path.dirname(os.path.abspath(sys.argv[0]))
+    os.chdir(script_directory)
+
+    print("Current Working Directory:", os.getcwd())
+
+    
+    #error catching and logging
+    try: 
+        main() #run the code
+    except Exception as e: 
+        logging.error("An error occurred: %s", e)  # Log the error message
+        print("An error occurred. Please check error_log.txt for details.")
        
 #let the user know the code has finished. 
 finished = input('\n\nCode is completed.\nPress ENTER to close this window.') 
