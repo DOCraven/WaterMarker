@@ -6,7 +6,7 @@ from datetime import datetime
 from datetime import date
 
 ## VERSION ##
-## 2.5.0 ##
+## 2.5.1 ##
 
 ## THIS USES A Virtual Environment (venv) called 'WaterScript'. 
     # to run this code in the venv, use the following steps 
@@ -113,6 +113,10 @@ def user_date_input_manual_validator():
     date_combined = f"{year}, {month}, {day}"
     return date_combined
 
+def name_input_menu():
+    '''takes user name input'''
+    return #nothing
+
 def add_watermark_to_folder(input_folder, output_dir,  output_folder_root="output", output_folder_suffix="(watermarked)", date = date.today()):
     '''This function will add the watermark to the image'''
     #folder structure 
@@ -130,6 +134,7 @@ def add_watermark_to_folder(input_folder, output_dir,  output_folder_root="outpu
 
     #format the date into DD/MM/YY
     date_processed = date.strftime("%d/%m/%Y") 
+    photographer_name = 'Taken by: D Craven' #TODO add in menu for another user to enter their name
 
 
     for folder in folders:
@@ -158,7 +163,7 @@ def add_watermark_to_folder(input_folder, output_dir,  output_folder_root="outpu
 
                 # Get the base name of the file (without extension)
                 file_name = os.path.splitext(file)[0]
-                file_name_with_date = file_name + '\n' + date_processed #slap the date below the file name
+                file_name_with_date = file_name + '\n' + date_processed + '\n' + photographer_name #slap the date below the file name, and my name under that
                 # Create a drawing object
                 draw = ImageDraw.Draw(img)
                 
@@ -175,6 +180,7 @@ def add_watermark_to_folder(input_folder, output_dir,  output_folder_root="outpu
 
 
                 # Add the watermark to the image with chosen color
+                # file_name_with_date = '\n\nTaken By: D Craven'
                 draw.text(position, file_name_with_date, font=font, fill=font_color)
 
                 # Save the image with EXIF data
@@ -183,6 +189,9 @@ def add_watermark_to_folder(input_folder, output_dir,  output_folder_root="outpu
                     img.save(output_path, exif=exif_data)  # Save with EXIF data
                 else:
                     img.save(output_path)  # Save without EXIF if not available
+    
+    return #nothing 
+
 
 def main(): 
     ''' script runs here'''
