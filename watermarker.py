@@ -115,9 +115,19 @@ def user_date_input_manual_validator():
 
 def name_input_menu():
     '''takes user name input'''
-    return #nothing
+    while True: #loop to ensure a name is input 
+        name = input("\nPlease enter your name (or press Enter to use default): ").strip()
+        
+        if not name: #user does not enter anything, defaults to my name
+            print ('Default Name Chosen')
+            return "D Craven"
+        elif all(char.isalpha() or char.isspace() or char in ["-", "'"] for char in name): #strips leading and trailing spaces, enforeces alphabetic characters and spaces
+            return name
+        else:
+            print("Name can only contain letters, spaces, hyphens, or apostrophes. Please try again.")
 
-def add_watermark_to_folder(input_folder, output_dir,  output_folder_root="output", output_folder_suffix="(watermarked)", date = date.today()):
+
+def add_watermark_to_folder(input_folder, output_dir,  output_folder_root="output", output_folder_suffix="(watermarked)", date = date.today(), photo_taken_by = 'D Craven'):
     '''This function will add the watermark to the image'''
     #folder structure 
         # output = folder that holds the edited photos
@@ -134,7 +144,8 @@ def add_watermark_to_folder(input_folder, output_dir,  output_folder_root="outpu
 
     #format the date into DD/MM/YY
     date_processed = date.strftime("%d/%m/%Y") 
-    photographer_name = 'Taken by: D Craven' #TODO add in menu for another user to enter their name
+    # append photographer name into the string. Defaults to D Craven
+    photographer_name = 'Taken by: ' + photo_taken_by
 
 
     for folder in folders:
@@ -163,7 +174,7 @@ def add_watermark_to_folder(input_folder, output_dir,  output_folder_root="outpu
 
                 # Get the base name of the file (without extension)
                 file_name = os.path.splitext(file)[0]
-                file_name_with_date = file_name + '\n' + date_processed + '\n' + photographer_name #slap the date below the file name, and my name under that
+                file_name_with_date = file_name + '\n' + date_processed + '\n' + photographer_name #slap the date below the file name, and photographer name under that
                 # Create a drawing object
                 draw = ImageDraw.Draw(img)
                 
@@ -178,9 +189,7 @@ def add_watermark_to_folder(input_folder, output_dir,  output_folder_root="outpu
                 # Set the font color to black
                 font_color = user_font_colour 
 
-
                 # Add the watermark to the image with chosen color
-                # file_name_with_date = '\n\nTaken By: D Craven'
                 draw.text(position, file_name_with_date, font=font, fill=font_color)
 
                 # Save the image with EXIF data
@@ -201,7 +210,10 @@ def main():
     ## STEP 2 ## - Date is determined and validated if required
     chosen_date = date_determinator(menu)
 
-    ## STEP 3 ## - Watermark the photos
+    ## STEP 3 ## - Get photographer name
+    photographer_name = name_input_menu()
+
+    ## STEP 4 ## - Watermark the photos
         #get the current working dir, to put photos in when done
     output_dir = os.getcwd()
         #get the current directory, and then look for the "input" folder. 
@@ -210,7 +222,7 @@ def main():
     working_directory = os.path.join(os.getcwd(), 'input') #get working dir, add #input# to it. 
     ## TODO change output dir to ove level above. 
     # send everything to the function
-    add_watermark_to_folder(working_directory, output_dir, date = chosen_date)
+    add_watermark_to_folder(working_directory, output_dir, date = chosen_date, photo_taken_by = photographer_name)
 
 
 
