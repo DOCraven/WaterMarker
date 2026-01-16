@@ -4,9 +4,12 @@ import sys
 import logging 
 from datetime import datetime
 from datetime import date
+#OS Agnostic Font
+from pathlib import Path
+from PIL import ImageFont
 
 ## VERSION ##
-## 2.5.1 ##
+## 2.6.1 ##
 
 ## THIS USES A Virtual Environment (venv) called 'WaterScript'. 
     # to run this code in the venv, use the following steps 
@@ -35,9 +38,32 @@ from datetime import date
 # this script will NOT work on a folder of folders or standalong photos. All photos need to be in one folder. 
 
 #variables
-font_location = "C:/Windows/Fonts/arial.ttf"
+#font_location = "C:/Windows/Fonts/arial.ttf"
 ## CHANGE THIS TO CHANGE THE FONT COLOUR - DEFAULT IS RED 
+#OS Agnostic Font
+BASE_DIR = Path(__file__).resolve().parent
+FONT_PATH = BASE_DIR / "fonts" / "DejaVuSans.ttf"
+FONT_SIZE = 128
+
+font = ImageFont.truetype(str(FONT_PATH), FONT_SIZE)
 user_font_colour = 'red'
+####### ERROR LOGGING ###############
+
+logging.basicConfig(
+    filename="error_log.txt",
+    filemode="a",  # append; use "w" to overwrite each run
+    level=logging.ERROR,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+####### Load Font ##########
+
+try:
+    WATERMARK_FONT = ImageFont.truetype(str(FONT_PATH), FONT_SIZE)
+except OSError:
+    logging.error("Failed to load DejaVuSans.ttf", exc_info=True)
+    WATERMARK_FONT = ImageFont.load_default()
+
 
 ####### FUNCTIONS #####################
 
@@ -179,9 +205,11 @@ def add_watermark_to_folder(input_folder, output_dir,  output_folder_root="outpu
                 draw = ImageDraw.Draw(img)
                 
                 # Choose font and size (you may need to change the font path)
-                font_path = font_location
-                font_size = 128
-                font = ImageFont.truetype(font_path, font_size)
+                #font_path = font_location
+                #font_size = 128
+                #font = ImageFont.truetype(font_path, font_size)
+
+                font = WATERMARK_FONT
 
                 # Choose the position for the watermark (you can adjust this)
                 position = (10, 10)
@@ -190,7 +218,12 @@ def add_watermark_to_folder(input_folder, output_dir,  output_folder_root="outpu
                 font_color = user_font_colour 
 
                 # Add the watermark to the image with chosen color
-                draw.text(position, file_name_with_date, font=font, fill=font_color)
+                draw.text(
+                    position,
+                    file_name_with_date,
+                    font=font,
+                    fill=font_color
+                    )
 
                 # Save the image with EXIF data
                 output_path = os.path.join(output_folder, file)
@@ -213,7 +246,7 @@ def main():
     ## STEP 3 ## - Get photographer name
     photographer_name = name_input_menu()
 
-    ## STEP 4 ## - Watermark the photos
+    ## STEP 4 ## - Watermark the photosuser_font_colour
         #get the current working dir, to put photos in when done
     output_dir = os.getcwd()
         #get the current directory, and then look for the "input" folder. 
@@ -239,8 +272,9 @@ if __name__ == "__main__":
     #error catching and logging
     try: 
         main() #run the code
-    except Exception as e: 
-        logging.error("An error occurred: %s", e)  # Log the error message
+    except Exception as e: #an error occurs
+        #logging.error("An error occurred: %s", e)  # Log the error message
+        logging.error("An error occurred", exc_info=True)
         print("An error occurred. Please check error_log.txt for details.")
        
 #let the user know the code has finished. 
